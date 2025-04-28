@@ -1,4 +1,26 @@
 import numpy as np
+data = np.load('mnist.npz')
+X_train = data['x_train']
+y_train = data['y_train']
+X_test = data['x_test']
+y_test = data['y_test']
+
+def one_hot_encoding(y, num_classes=10):
+    one_hot = np.zeros((y.size, num_classes))
+    one_hot[np.arange(y.size), y] = 1
+    return one_hot
+
+X_train = X_train / 255.0
+X_test = X_test / 255.0
+
+X_train = X_train.reshape(X_train.shape[0], -1)
+X_test = X_test.reshape(X_test.shape[0], -1)
+
+y_train_encoded = one_hot_encoding(y_train)
+y_test_encoded = one_hot_encoding(y_test)
+
+X_train = X_train.T
+X_test = X_test.T
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size, learning_rate=0.1):
@@ -70,3 +92,28 @@ class NeuralNetwork:
         preds = self.predict(X)
         accuracy = np.mean(preds == Y_true) * 100
         return accuracy
+
+    def save_model(self, filename):
+        np.savez(filename, W1=self.W1, b1=self.b1, W2=self.W2, b2=self.b2)
+    
+    def load_model(self, filename):
+        data = np.load(filename)
+        self.W1 = data['W1']
+        self.b1 = data['b1']
+        self.W2 = data['W2']
+        self.b2 = data['b2']
+
+model = NeuralNetwork(input_size=784, hidden_size=128, output_size=10, learning_rate=0.1)
+
+model.train(X_train, y_train_encoded.T, epochs=300)
+
+train_accuracy = model.evaluate(X_train, y_train)
+test_accuracy = model.evaluate(X_test, y_test)
+
+model.save_model('mnist_trained_model.npz')
+
+# model = NeuralNetwork(input_size=784, hidden_size=128, output_size=10)
+# model.load_model('mnist_trained_model.npz')
+
+print(f"Train Accuracy: {train_accuracy:.2f}%")
+print(f"Test Accuracy: {test_accuracy:.2f}%")
